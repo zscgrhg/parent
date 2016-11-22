@@ -1,6 +1,6 @@
 package com.accenture.kafka.service.autoconfig.local;
 
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by THINK on 2016/11/19.
  */
-@Log
+@Slf4j
 public class ProcessExcuter extends Thread {
     public static final AtomicInteger ATOMIC_ID = new AtomicInteger(1);
     private final ProcessBuilder pb;

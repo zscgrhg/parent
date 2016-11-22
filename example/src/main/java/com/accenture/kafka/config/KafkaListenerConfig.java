@@ -30,7 +30,7 @@ public class KafkaListenerConfig {
         @KafkaListener(topics = "local1", containerFactory = BATCH_CONTAINER_FACTORY)
         public void listen(List<ConsumerRecord<String, Metrics>> list) throws InterruptedException {
             list.parallelStream().forEach(it->{
-                System.out.println("received : "+it.toString());
+                System.out.println("received : content="+it.value());
             });
         }
     }

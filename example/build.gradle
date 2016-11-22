@@ -46,9 +46,7 @@ dependencies {
     compileOnly('org.projectlombok:lombok')
     testCompile('org.springframework.boot:spring-boot-starter-test')
     compile project(':shared')
-    compile(project(':service')) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
+    compile(project(':service'))
 }
 task cleanKafkaLog(type: Delete) {
     delete '../tmp'

@@ -17,6 +17,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 /**
  * Created by THINK on 2016/11/21.
@@ -58,6 +59,7 @@ public class Client<T extends KafkaMessage> {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
+        Pattern p;
         ProductorConfig build = ProductorConfig.builder()
                 .keySerializer(IntegerSerializer.class)
                 .valueSerializer(MetricsSerializer.class)
@@ -70,11 +72,12 @@ public class Client<T extends KafkaMessage> {
         }
         Client<Metrics> client = new Client<>("aaa", build, brokers);
         final Random random = new Random();
+
         while (true) {
             Metrics m = Metrics.builder()
                     .cpUtilization(random.nextInt(100))
                     .created(new Date())
-                    .sth("oops!")
+                    .talk(RandomStrings.get())
                     .mem(random.nextInt(100))
                     .network(random.nextInt(100))
                     .build();

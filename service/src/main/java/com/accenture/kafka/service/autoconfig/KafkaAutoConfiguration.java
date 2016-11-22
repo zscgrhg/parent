@@ -3,7 +3,6 @@ package com.accenture.kafka.service.autoconfig;
 
 import com.accenture.kafka.service.autoconfig.embedded.KafkaEmbedded;
 import com.accenture.kafka.service.autoconfig.local.ExecUtil;
-import com.accenture.kafka.service.kafka.KafkaProperties;
 import com.accenture.kafka.service.utils.KafkaUtil;
 import com.accenture.kafka.shared.Profiles;
 import kafka.server.KafkaServer;

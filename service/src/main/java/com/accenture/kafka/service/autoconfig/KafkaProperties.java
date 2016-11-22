@@ -1,4 +1,4 @@
-package com.accenture.kafka.service.kafka;
+package com.accenture.kafka.service.autoconfig;
 
 import lombok.Data;
 import org.apache.kafka.common.serialization.*;

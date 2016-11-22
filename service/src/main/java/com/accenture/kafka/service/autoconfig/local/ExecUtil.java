@@ -2,7 +2,7 @@ package com.accenture.kafka.service.autoconfig.local;
 
 
 import com.accenture.kafka.service.autoconfig.KafkaConnection;
-import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by THINK on 2016/11/19.
  */
-@Log
+@Slf4j
 public class ExecUtil {
 
     public static final String OS_NAME = System.getProperty("os.name");
@@ -166,7 +166,7 @@ public class ExecUtil {
                                               Map<String, String> kafkaProperties,
                                               Map<Integer, Integer> brokerIdAndPort) throws IOException, InterruptedException {
         stopKafkaIfExist(kafkaHome);
-        //stopZookeeperIfExist(kafkaHome);
+        stopZookeeperIfExist(kafkaHome);
         if (!tmpRoot.exists()) {
             tmpRoot.mkdirs();
             tmpRoot.deleteOnExit();

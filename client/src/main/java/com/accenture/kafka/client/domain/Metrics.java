@@ -25,14 +25,14 @@ public class Metrics implements KafkaMessage<Metrics> {
     private int mem;
     private int network;
     private Date created = new Date();
-    private String sth = "";
+    private String talk = "";
 
 
     public void writeOut(final ObjectOutput out) throws IOException {
         out.writeInt(cpUtilization);
         out.writeLong(created.getTime());
         out.writeInt(mem);
-        out.writeObject(sth);
+        out.writeObject(talk);
         out.writeInt(network);
     }
 
@@ -41,7 +41,7 @@ public class Metrics implements KafkaMessage<Metrics> {
         Metrics cpu = Metrics.builder().cpUtilization(in.readInt())
                 .created(new Date(in.readLong()))
                 .mem(in.readInt())
-                .sth((String) in.readObject())
+                .talk((String) in.readObject())
                 .network(in.readInt()).build();
         return cpu;
     }

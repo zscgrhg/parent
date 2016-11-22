@@ -36,7 +36,7 @@ public class MetricsProductor extends Thread {
             Metrics cpu = Metrics.builder()
                     .cpUtilization(random.nextInt(100))
                     .created(new Date())
-                    .sth("oops!")
+                    .talk("oops!")
                     .mem(random.nextInt(100))
                     .network(random.nextInt(100))
                     .build();
