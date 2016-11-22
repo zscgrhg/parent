@@ -39,6 +39,7 @@ import java.util.Set;
 @ConditionalOnClass({ZkClient.class, KafkaServer.class})
 @EnableConfigurationProperties(
         {KafkaProperties.External.class,
+                KafkaProperties.Broker.class,
                 KafkaProperties.Local.class,
                 KafkaProperties.Embedded.class,
                 KafkaProperties.Consumer.class,
@@ -50,6 +51,7 @@ public class KafkaAutoConfiguration {
 
     @Autowired(required = false)
     Set<TopicDefine> topicDefines;
+
 
     @Bean
     @ConditionalOnMissingBean
@@ -118,10 +120,12 @@ public class KafkaAutoConfiguration {
     @ConditionalOnProperty(name = "kafka.local.enabled", havingValue = "true")
     @Profile(Profiles.NON_PRODUCTION)
     public static class LocalAutoConfiguration {
+
         @Bean
         @ConditionalOnMissingBean
         public KafkaConnection kafkaLocal(@Autowired
-                                                  KafkaProperties.Local local) throws Exception {
+                                                  KafkaProperties.Local local,
+                                          KafkaProperties.Broker brokerProperties) throws Exception {
             int zookeeperPort = local.getZookeeperPort();
             Map<Integer, Integer> brokerIdAndPort = local.getBrokerIdAndPort();
             File kafkaHome = new File(local.getKafkaHome());
@@ -129,8 +133,8 @@ public class KafkaAutoConfiguration {
             KafkaConnection kafkaConnection =
                     ExecUtil.startServer(kafkaHome,
                             dataDir,
-                            Collections.singletonMap("clientPort", Integer.toString(zookeeperPort)),
-                            Collections.EMPTY_MAP, brokerIdAndPort);
+                            Collections.<String,Object>singletonMap("clientPort", zookeeperPort),
+                            brokerProperties.getBrokerConfig(), brokerIdAndPort);
 
 
             return kafkaConnection;
@@ -145,13 +149,16 @@ public class KafkaAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public KafkaConnection kafkaEmbedded(@Autowired
-                                                     KafkaProperties.Embedded embedded) throws Exception {
-            KafkaEmbedded kafka = new KafkaEmbedded(embedded.getPort(),
+                                                     KafkaProperties.Embedded embedded,
+                                             KafkaProperties.Broker brokerProperties) throws Exception {
+            KafkaEmbedded kafka = new KafkaEmbedded(
+                    embedded.getPort(),
                     embedded.getBrokerCount(),
                     true,
                     embedded.getPartitions(),
                     embedded.getLogFilenamePattern(),
-                    embedded.getZookeeperDataDir());
+                    embedded.getZookeeperDataDir(),
+                    brokerProperties.getBrokerConfig());
             kafka.start();
             String brokersAsString = kafka.getBrokersAsString();
             String zookeeperConnectionString = kafka.getZookeeperConnectionString();

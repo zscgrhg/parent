@@ -26,9 +26,10 @@ public abstract class KafkaMessageDeserializer<T extends KafkaMessage<T>> implem
             ByteArrayInputStream in = new ByteArrayInputStream(data);
             T t = newInstance();
             try (ObjectInputStream objIn = new ObjectInputStream(in)) {
-                t = t.readIn(objIn);
+                int version = objIn.readInt();
+                t = t.readInByVersion(objIn, version);
             } catch (IOException | ClassNotFoundException e) {
-                throw new RuntimeException("Deserialize Exception:" + e.getMessage());
+                throw new DeserializeException(e);
             }
             return t;
         }

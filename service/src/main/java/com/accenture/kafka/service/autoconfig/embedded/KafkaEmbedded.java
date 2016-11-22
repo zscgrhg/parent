@@ -1,6 +1,5 @@
 package com.accenture.kafka.service.autoconfig.embedded;
 
-import kafka.admin.AdminUtils;
 import kafka.admin.AdminUtils$;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
@@ -8,10 +7,7 @@ import kafka.server.NotRunning;
 import kafka.utils.*;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.exception.ZkInterruptedException;
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.common.Node;
-import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.protocol.Errors;
 import org.apache.kafka.common.protocol.SecurityProtocol;
 import org.apache.kafka.common.requests.MetadataResponse;
@@ -23,12 +19,12 @@ import org.springframework.retry.support.RetryTemplate;
 import scala.collection.JavaConversions;
 import scala.collection.Map;
 import scala.collection.Set;
-import java.io.File;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.*;
+
+import static com.accenture.kafka.service.utils.PropertiesUtil.store;
 
 /**
  * Created by THINK on 2016/11/14.
@@ -44,13 +40,10 @@ public class KafkaEmbedded {
 
     private final boolean controlledShutdown;
 
-    private final String[] topics;
-
-    private final int partitionsPerTopic;
 
     private final String logDirBase;
     private final String zookeeperDataDirBase;
-
+    private final java.util.Map<String, Object> brokerConfigs;
     private List<KafkaServer> kafkaServers;
 
     private ZookeeperEmbedded zookeeper;
@@ -58,44 +51,44 @@ public class KafkaEmbedded {
     private ZkClient zookeeperClient;
 
     private String zkConnect;
+    final static String TIME = "T"+new Date().getTime();
 
-    public KafkaEmbedded(int port, int count, final String logDirBase, final String zookeeperDataDirBase) {
-        this(port, count, false, logDirBase, zookeeperDataDirBase);
+
+    public KafkaEmbedded(int port, int count, final String logDirBase, final String zookeeperDataDirBase, final java.util.Map<String, Object> brokerConfigs) {
+        this(port, count, false, logDirBase, zookeeperDataDirBase, brokerConfigs);
     }
 
     /**
      * Create embedded Kafka brokers.
-     *  @param count              the number of brokers.
-     * @param controlledShutdown passed into TestUtils.createBrokerConfig.
+     *
+     * @param count                the number of brokers.
+     * @param controlledShutdown   passed into TestUtils.createBrokerConfig.
      * @param logDirBase
      * @param zookeeperDataDirBase
-     * @param topics             the topics to create (2 partitions per).
+     * @param brokerConfigs
      */
-    public KafkaEmbedded(int port, int count, boolean controlledShutdown, final String logDirBase, final String zookeeperDataDirBase, String... topics) {
-        this(port, count, controlledShutdown, 2, logDirBase, zookeeperDataDirBase, topics);
+    public KafkaEmbedded(int port, int count, boolean controlledShutdown, final String logDirBase, final String zookeeperDataDirBase, final java.util.Map<String, Object> brokerConfigs) {
+        this(port, count, controlledShutdown, 2, logDirBase, zookeeperDataDirBase, brokerConfigs);
     }
 
     /**
      * Create embedded Kafka brokers.
-     *  @param count              the number of brokers.
-     * @param controlledShutdown passed into TestUtils.createBrokerConfig.
-     * @param partitions         partitions per topic.
+     *
+     * @param count                the number of brokers.
+     * @param controlledShutdown   passed into TestUtils.createBrokerConfig.
+     * @param partitions           partitions per topic.
      * @param logDirBase
      * @param zookeeperDataDirBase
-     * @param topics             the topics to create.
+     * @param brokerConfigs
      */
-    public KafkaEmbedded(int port, int count, boolean controlledShutdown, int partitions, final String logDirBase, final String zookeeperDataDirBase, String... topics) {
+    public KafkaEmbedded(int port, int count, boolean controlledShutdown, int partitions, final String logDirBase, final String zookeeperDataDirBase, final java.util.Map<String, Object> brokerConfigs) {
         this.KAFKA_SERVER_PORT = port;
         this.count = count;
         this.controlledShutdown = controlledShutdown;
         this.logDirBase = logDirBase;
         this.zookeeperDataDirBase = zookeeperDataDirBase;
-        if (topics != null) {
-            this.topics = topics;
-        } else {
-            this.topics = new String[0];
-        }
-        this.partitionsPerTopic = partitions;
+        this.brokerConfigs = brokerConfigs;
+
     }
 
 
@@ -108,27 +101,38 @@ public class KafkaEmbedded {
         this.zookeeperClient = new ZkClient(this.zkConnect, zkSessionTimeout, zkConnectionTimeout,
                 ZKStringSerializer$.MODULE$);
         this.kafkaServers = new ArrayList<>();
+
         for (int i = 0; i < this.count; i++) {
             int kafkaServerPort = this.KAFKA_SERVER_PORT + i;
+            Properties p = new Properties();
+            File tmp = new File(String.format(logDirBase,TIME,"broker_"+i+".properties"));
+            File parentFile = tmp.getParentFile();
+            if(!parentFile.exists()){
+                parentFile.mkdirs();
+            }
+            p.putAll(brokerConfigs);
+            p.put("broker.id", i);
+            store(p, new FileOutputStream(tmp), "oops");
             Properties brokerConfigProperties = TestUtils.createBrokerConfig(i, this.zkConnect, this.controlledShutdown,
                     true, kafkaServerPort,
                     scala.Option.<SecurityProtocol>apply(null),
-                    scala.Option.<File>apply(null),
+                    scala.Option.<File>apply(tmp),
                     scala.Option.<Properties>apply(null),
                     true, false, 0, false, 0, false, 0, scala.Option.<String>apply(null));
             brokerConfigProperties.setProperty("replica.socket.timeout.ms", "1000");
             brokerConfigProperties.setProperty("controller.socket.timeout.ms", "1000");
             brokerConfigProperties.setProperty("offsets.topic.replication.factor", "1");
-            brokerConfigProperties.setProperty("log.dirs", logDirBase + i);
+
+
+
+            brokerConfigProperties.setProperty("log.dirs", String.format(logDirBase,TIME,i));
 
             KafkaServer server = TestUtils.createServer(new KafkaConfig(brokerConfigProperties), SystemTime$.MODULE$);
             this.kafkaServers.add(server);
         }
         ZkUtils zkUtils = new ZkUtils(getZkClient(), null, false);
         Properties props = new Properties();
-        for (String topic : this.topics) {
-            AdminUtils.createTopic(zkUtils, topic, this.partitionsPerTopic, this.count, props, null);
-        }
+
         System.setProperty(SPRING_EMBEDDED_KAFKA_BROKERS, getBrokersAsString());
     }
 
@@ -187,7 +191,7 @@ public class KafkaEmbedded {
 
 
     public void startZookeeper() {
-        this.zookeeper = new ZookeeperEmbedded(2181, zookeeperDataDirBase);
+        this.zookeeper = new ZookeeperEmbedded(2181, String.format(zookeeperDataDirBase,TIME));
         this.zookeeper.start();
     }
 
@@ -301,58 +305,5 @@ public class KafkaEmbedded {
         return true;
     }
 
-    /**
-     * Subscribe a consumer to all the embedded topics.
-     *
-     * @param consumer the consumer.
-     * @throws Exception an exception.
-     */
-    public void consumeFromAllEmbeddedTopics(Consumer<?, ?> consumer) throws Exception {
-        final CountDownLatch consumerLatch = new CountDownLatch(1);
-        consumer.subscribe(Arrays.asList(this.topics), new ConsumerRebalanceListener() {
-
-            @Override
-            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            }
-
-            @Override
-            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                consumerLatch.countDown();
-            }
-
-        });
-        consumer.poll(0); // force assignment
-        assertThat(consumerLatch.await(30, TimeUnit.SECONDS))
-                .as("Failed to be assigned partitions from the embedded topics")
-                .isTrue();
-    }
-
-    /**
-     * Subscribe a consumer to one of the embedded topics.
-     *
-     * @param consumer the consumer.
-     * @param topic    the topic.
-     * @throws Exception an exception.
-     */
-    public void consumeFromAnEmbeddedTopic(Consumer<?, ?> consumer, String topic) throws Exception {
-        assertThat(this.topics).as("topic is not in embedded topic list").contains(topic);
-        final CountDownLatch consumerLatch = new CountDownLatch(1);
-        consumer.subscribe(Collections.singletonList(topic), new ConsumerRebalanceListener() {
-
-            @Override
-            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-            }
-
-            @Override
-            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                consumerLatch.countDown();
-            }
-
-        });
-        consumer.poll(0); // force assignment
-        assertThat(consumerLatch.await(30, TimeUnit.SECONDS))
-                .as("Failed to be assigned partitions from the embedded topics")
-                .isTrue();
-    }
 
 }

@@ -12,13 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ServerProperties {
     public static final AtomicInteger ATOMIC_ID = new AtomicInteger(1);
 
-    public static Properties getKafkaProperties(String logDiRoot, String zookeeperConnect, Map<String, String> p) {
+    public static Properties getKafkaProperties(String logDiRoot, String zookeeperConnect, Map<String, Object> p) {
         Properties properties = new Properties();
         properties.put("broker.id", Integer.toString(ATOMIC_ID.getAndIncrement()));
         properties.put("log.dirs", logDiRoot + File.separator + "kafka" + File.separator + (new Date().getTime() + "_" + ATOMIC_ID.getAndIncrement()) + File.separator + "log");
         properties.put("zookeeper.connect", zookeeperConnect);
         properties.put("num.network.threads", "3");
-        properties.put("listeners", "PLAINTEXT://:9092");
+        properties.put("listeners", "PLAINTEXT://0.0.0.0:9092");
         properties.put("num.io.threads", "8");
         properties.put("socket.send.buffer.bytes", "102400");
         properties.put("socket.receive.buffer.bytes", "102400");
@@ -33,7 +33,7 @@ public class ServerProperties {
         return properties;
     }
 
-    public static Properties getZookeeperProperties(String dataDirRoot, String clientPort, Map<String, String> p) {
+    public static Properties getZookeeperProperties(String dataDirRoot, String clientPort, Map<String, Object> p) {
         Properties properties = new Properties();
 
         properties.put("maxClientCnxns", "0");

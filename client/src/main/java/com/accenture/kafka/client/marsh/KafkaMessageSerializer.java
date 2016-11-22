@@ -23,9 +23,10 @@ public abstract class KafkaMessageSerializer<T extends KafkaMessage> implements 
         } else {
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)) {
+                objectOutputStream.writeInt(data.getVersion());
                 data.writeOut(objectOutputStream);
             } catch (IOException e) {
-                throw new RuntimeException("Serialize Exception:" + e.getMessage());
+                throw new SerializeException(e);
             }
             byte[] bytes = byteArrayOutputStream.toByteArray();
             return bytes;

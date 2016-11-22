@@ -11,11 +11,15 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.accenture.kafka.service.utils.PropertiesUtil.store;
+
 /**
  * Created by THINK on 2016/11/19.
  */
 @Slf4j
 public class ExecUtil {
+
+    public static final String LOCAL_HOST = "localhost:";
 
     public static final String OS_NAME = System.getProperty("os.name");
     public static final boolean IS_WINDOWS_OS = OS_NAME.toLowerCase().contains("windows");
@@ -30,7 +34,7 @@ public class ExecUtil {
     }
 
     public static void rmFileOrDir(File file) {
-        if(file.exists()){
+        if (file.exists()) {
             Thread t;
             if (IS_WINDOWS_OS) {
                 if (file.isDirectory()) {
@@ -49,14 +53,14 @@ public class ExecUtil {
         }
     }
 
-    public static Thread startZookeeper(File kafkaHome, File tempRoot, Map<String, String> zookeeperProperties, final String zkPort) throws InterruptedException, IOException {
+    public static Thread startZookeeper(File kafkaHome, File tempRoot, Map<String, Object> zookeeperProperties, final String zkPort) throws InterruptedException, IOException {
 
         Properties zkProp = ServerProperties.getZookeeperProperties(tempRoot.getAbsolutePath(), zkPort, zookeeperProperties);
         final CountDownLatch zookeeperLatch = new CountDownLatch(1);
         File configDir = new File(tempRoot.getAbsolutePath() + File.separator + "config");
         configDir.mkdirs();
         File zookeeperCfgFile = createPropertiesFile(configDir.getAbsolutePath(), zkProp, "zookeeper.properties");
-        zookeeperCfgFile.deleteOnExit();
+        //zookeeperCfgFile.deleteOnExit();
         Thread startZookeeper = execNonBlock(kafkaHome,
                 new OutputHandler() {
                     @Override
@@ -76,11 +80,12 @@ public class ExecUtil {
 
     public static Thread stopZookeeperIfExist(File workDir) throws InterruptedException {
         Thread exec = exec(workDir, null, selectKafkaCmdOfOs("zookeeper-server-stop"));
+        //Thread exec = exec(workDir, null, "wmic process where (commandline like \"%%zookeeper%%\" and not name=\"wmic.exe\") delete");
         return exec;
     }
 
 
-    public static List<Thread> startKafka(File kafkaHome, File tempRoot, Map<String, String> serverConfig, String zkPort, Map<Integer, Integer> brokerIdAndPorts) throws InterruptedException, IOException {
+    public static List<Thread> startKafka(File kafkaHome, File tempRoot, Map<String, Object> serverConfig, String zkPort, Map<Integer, Integer> brokerIdAndPorts) throws InterruptedException, IOException {
 
         File configDir = new File(tempRoot.getAbsolutePath() + File.separator + "config");
         configDir.mkdirs();
@@ -91,7 +96,7 @@ public class ExecUtil {
                     tempRoot.getAbsolutePath(),
                     "localhost:" + zkPort, serverConfig);
             serverProperties.put("broker.id", Integer.toString(brokerIdAndPort.getKey()));
-            serverProperties.put("listeners", "PLAINTEXT://:" + brokerIdAndPort.getValue());
+            serverProperties.put("listeners", "PLAINTEXT://0.0.0.0:" + brokerIdAndPort.getValue());
             File serverCfgFile = createPropertiesFile(configDir.getAbsolutePath(), serverProperties, "server" + brokerIdAndPort.getKey() + ".properties");
             serverCfgFile.deleteOnExit();
             Thread startKafka = execNonBlock(kafkaHome,
@@ -145,9 +150,9 @@ public class ExecUtil {
 
     public static void main(String[] args) throws IOException, InterruptedException {
 
-        File tmpRoot = new File("D:/library/kafkatest/localtmp");
+        File tmpRoot = new File("F:/parent/tmp");
 
-        File kafkaHome = new File("E:/kafka_2.11-0.10.1.0/");
+        File kafkaHome = new File("D:/kafka_2.11-0.10.1.0/");
 
         if (!IS_WINDOWS_OS) {
             tmpRoot = new File("/root/kafkalog/tmp/");
@@ -162,26 +167,27 @@ public class ExecUtil {
 
     public static KafkaConnection startServer(File kafkaHome,
                                               File tmpRoot,
-                                              Map<String, String> zookeeperProperties,
-                                              Map<String, String> kafkaProperties,
+                                              Map<String, Object> zookeeperProperties,
+                                              Map<String, Object> kafkaProperties,
                                               Map<Integer, Integer> brokerIdAndPort) throws IOException, InterruptedException {
         stopKafkaIfExist(kafkaHome);
-        stopZookeeperIfExist(kafkaHome);
+        //stopZookeeperIfExist(kafkaHome); // jvm exit silently
+        Thread.sleep(1000L);
         if (!tmpRoot.exists()) {
             tmpRoot.mkdirs();
             tmpRoot.deleteOnExit();
         }
 
         boolean hasZkPort = zookeeperProperties.containsKey("clientPort");
-        final String zkPort = hasZkPort ? zookeeperProperties.get("clientPort") : "2181";
-        startZookeeper(kafkaHome, tmpRoot, zookeeperProperties, zkPort);
-        startKafka(kafkaHome, tmpRoot, kafkaProperties, zkPort, brokerIdAndPort);
+        final Object zkPort = hasZkPort ? zookeeperProperties.get("clientPort") : "2181";
+        startZookeeper(kafkaHome, tmpRoot, zookeeperProperties, zkPort.toString());
+        startKafka(kafkaHome, tmpRoot, kafkaProperties, zkPort.toString(), brokerIdAndPort);
         log.info("start kafka complete");
 
-        String zkAddress = "localhost:" + zkPort;
+        String zkAddress = LOCAL_HOST + zkPort;
         StringBuilder sb = new StringBuilder();
         for (Integer port : brokerIdAndPort.values()) {
-            sb.append(",").append("localhost:").append(port);
+            sb.append(",").append(LOCAL_HOST).append(port);
         }
         KafkaConnection kafkaConnection = KafkaConnection.builder().isEmbedded(false)
                 .zookeeperConnectionString(zkAddress)
@@ -196,7 +202,7 @@ public class ExecUtil {
             serverProperties.delete();
         }
         serverProperties.createNewFile();
-        properties.store(new FileOutputStream(serverProperties), null);
+        store(properties,new FileOutputStream(serverProperties), null);
         return serverProperties;
     }
 }

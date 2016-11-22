@@ -1,6 +1,7 @@
 package com.accenture.kafka.client.domain;
 
 
+import com.accenture.kafka.client.marsh.DeserializeException;
 import com.accenture.kafka.client.marsh.KafkaMessage;
 import lombok.*;
 
@@ -21,6 +22,12 @@ import java.util.Date;
 public class Metrics implements KafkaMessage<Metrics> {
 
     private static final long serialVersionUID = 6842977566063744564L;
+
+    public static final int VERSION_1 = 1;
+    public static final int VERSION_2 = 2;
+
+    private final int version = VERSION_2;
+
     private int cpUtilization;
     private int mem;
     private int network;
@@ -37,12 +44,27 @@ public class Metrics implements KafkaMessage<Metrics> {
     }
 
 
-    public Metrics readIn(final ObjectInput in) throws IOException, ClassNotFoundException {
-        Metrics cpu = Metrics.builder().cpUtilization(in.readInt())
-                .created(new Date(in.readLong()))
-                .mem(in.readInt())
-                .talk((String) in.readObject())
-                .network(in.readInt()).build();
+    public Metrics readInByVersion(final ObjectInput in, int version) throws IOException, ClassNotFoundException {
+        Metrics cpu;
+        switch (version) {
+
+            case VERSION_2:
+                cpu = Metrics.builder().cpUtilization(in.readInt())
+                        .created(new Date(in.readLong()))
+                        .mem(in.readInt())
+                        .talk((String) in.readObject())
+                        .network(in.readInt()).build();
+                break;
+            case VERSION_1:
+                cpu = Metrics.builder().cpUtilization(in.readInt())
+                        .created(new Date(in.readLong()))
+                        .mem(in.readInt())
+                        .talk((String) in.readObject())
+                        .network(in.readInt()).build();
+                break;
+            default:
+                throw new DeserializeException(version);
+        }
         return cpu;
     }
 

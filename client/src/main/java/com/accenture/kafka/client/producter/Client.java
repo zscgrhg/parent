@@ -67,10 +67,12 @@ public class Client<T extends KafkaMessage> {
         String brokers;
         if (args != null && args.length > 0) {
             brokers = args[0];
+
         } else {
             brokers = getBrokersFromProperties();
         }
-        Client<Metrics> client = new Client<>("aaa", build, brokers);
+
+        Client<Metrics> client = new Client<>(RandomStrings.get(), build, brokers);
         final Random random = new Random();
 
         while (true) {

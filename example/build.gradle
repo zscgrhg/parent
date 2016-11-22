@@ -42,6 +42,7 @@ repositories {
 
 
 dependencies {
+    compile 'org.springframework.kafka:spring-kafka-test:1.1.1.RELEASE'
     compile('org.springframework.boot:spring-boot-starter-web')
     compileOnly('org.projectlombok:lombok')
     testCompile('org.springframework.boot:spring-boot-starter-test')
@@ -53,3 +54,4 @@ task cleanKafkaLog(type: Delete) {
 }
 
 //clean.dependsOn cleanKafkaLog
+test.enabled=false

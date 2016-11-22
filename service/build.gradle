@@ -9,22 +9,16 @@ buildscript {
         maven { url 'http://repo.spring.io/plugins-release' }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
         classpath 'org.springframework.build.gradle:propdeps-plugin:0.0.7'
     }
 }
 apply plugin: 'java'
-apply plugin: 'org.springframework.boot'
-apply plugin: 'application'
 apply plugin: 'propdeps'
 apply plugin: 'propdeps-maven'
 apply plugin: 'propdeps-idea'
 apply plugin: 'propdeps-eclipse'
 
 
-bootRepackage.enabled = false
-mainClassName = "com.accenture.kafka.service.autoconfig.local.ExecUtil"
-applicationDefaultJvmArgs = ["-Dfile.encoding=utf8","-XX:+ShowMessageBoxOnError"]
 
 repositories {
     mavenCentral()
@@ -41,7 +35,7 @@ dependencies {
     compile 'org.springframework.kafka:spring-kafka:1.1.1.RELEASE'
     compileOnly 'org.springframework.kafka:spring-kafka-test:1.1.1.RELEASE'
     compile 'org.assertj:assertj-core:2.5.0'
-    optional "org.springframework.boot:spring-boot-configuration-processor"
+    optional "org.springframework.boot:spring-boot-configuration-processor:${springBootVersion}"
     compile project(':shared')
     compile project(':client')
 }

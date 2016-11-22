@@ -8,7 +8,9 @@ import java.io.*;
 public interface KafkaMessage<T extends KafkaMessage> extends Serializable {
     void writeOut(ObjectOutput out) throws IOException;
 
-    T readIn(ObjectInput in) throws IOException, ClassNotFoundException;
+    T readInByVersion(ObjectInput in,int version) throws IOException, ClassNotFoundException;
+
+    int getVersion();
 
     String getTopic();
 }

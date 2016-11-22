@@ -54,7 +54,7 @@ public class ProcessExcuter extends Thread {
             BufferedReader bf = new BufferedReader(new InputStreamReader(p.getInputStream(), "GBK"));
             while ((!isInterrupted())) {
                 while (bf.ready()) {
-                    log.info(getName());
+                   // log.info(getName());
                     outputHandler.handleLine(bf.readLine());
                 }
                 try {
