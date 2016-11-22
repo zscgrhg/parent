@@ -1,0 +1,39 @@
+group 'com.accenture.kafka'
+version '1.0-SNAPSHOT'
+
+subprojects {
+    tasks.withType(JavaCompile) {
+        options.encoding = 'UTF-8'
+    }
+
+    tasks.withType(Javadoc) {
+        options.encoding = 'UTF-8'
+    }
+    buildscript {
+        ext {
+            springBootVersion = '1.4.2.RELEASE'
+        }
+        repositories {
+            jcenter()
+        }
+        dependencies {
+            classpath 'com.novoda:bintray-release:0.3.5'
+        }
+    }
+    task rebuildAll(group: 'All-Tasks-ReRun')
+
+    rebuildAll.dependsOn('assemble')
+
+    gradle.taskGraph.whenReady { taskGraph ->
+        taskGraph.beforeTask {
+            switch (it.name) {
+                default:
+                    if (taskGraph.hasTask(rebuildAll)) {
+                        it.outputs.upToDateWhen { false }
+                    }
+            }
+        }
+    }
+}
+
+

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS}[%thread] %logger[%file:%line]%n[%level] - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>log/master.%i.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS}[%thread] %logger[%file:%line]%n[%level] - %msg %n</pattern>
+        </encoder>
+    </appender>
+
+
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.springframework.orm.jpa" level="ERROR"/>
+    <logger name="org.springframework.cache" level="ERROR"/>
+    <logger name="org.springsource.loaded.TypeRegistry" level="OFF"/>
+    <logger name="com.fasterxml.jackson" level="ERROR"/>
+    <logger name="org.I0Itec.zkclient" level="DEBUG"/>
+    <logger name="com.accenture" level="DEBUG"/>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+</configuration>

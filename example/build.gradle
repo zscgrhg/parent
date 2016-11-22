@@ -1,0 +1,57 @@
+buildscript {
+    ext {
+        springBootVersion = '1.4.2.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath 'org.springframework:springloaded:1.2.6.RELEASE'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'application'
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file("$buildDir/classes/main/")
+    }
+}
+mainClassName = 'com.accenture.kafka.ExampleApplication'
+bootRun {
+    jvmArgs=[
+            "-Dspringloaded=explain",
+            "-Dspring.profiles.active=dev"
+    ]
+}
+
+jar {
+    baseName = 'example'
+    version = '0.0.1-SNAPSHOT'
+}
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+
+dependencies {
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compileOnly('org.projectlombok:lombok')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    compile project(':shared')
+    compile(project(':service')) {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+}
+task cleanKafkaLog(type: Delete) {
+    delete '../tmp'
+}
+
+//clean.dependsOn cleanKafkaLog
