@@ -3,8 +3,6 @@ package com.accenture.kafka.service.server;
 import kafka.cluster.EndPoint;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
-import kafka.server.KafkaServerStartable;
-import kafka.server.RunningAsBroker;
 import kafka.utils.SystemTime$;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.protocol.SecurityProtocol;
@@ -14,7 +12,6 @@ import scala.collection.immutable.Map;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by THINK on 2016/11/23.
@@ -48,8 +45,17 @@ public class KafkaStarter {
         }
     }
 
+    private void sleepSafely(long t) {
+        try {
+            Thread.sleep(t);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public synchronized void start() {
         zkStarter.start();
+        sleepSafely(1000);
         this.kafkaServers = new ArrayList<>();
         for (Properties brokerProperty : brokerProperties) {
             KafkaConfig config = new KafkaConfig(brokerProperty);
@@ -64,15 +70,11 @@ public class KafkaStarter {
                 byte b = kafkaServer.brokerState().currentState();
                 if (b < 3) {
                     started = false;
-                    try {
-                        Thread.sleep(500L);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    sleepSafely(500);
+                    break;
                 }
             }
         }
-
     }
 
     public synchronized void stop() {
