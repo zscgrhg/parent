@@ -20,3 +20,4 @@ dependencies {
     compileOnly('org.projectlombok:lombok:1.16.10')
     compile("org.springframework.boot:spring-boot-starter-logging:1.4.2.RELEASE")
 }
+

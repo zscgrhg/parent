@@ -3,9 +3,7 @@ package com.accenture.kafka.service.autoconfig;
 import lombok.Data;
 import org.apache.kafka.common.serialization.*;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,8 +24,10 @@ public class KafkaProperties {
     @ConfigurationProperties("kafka.broker")
     public static class Broker {
         private String zookeeperConnect;
+        @Deprecated
         private String advertisedHostName;
         private String advertisedListeners;
+        @Deprecated
         private Integer advertisedPort;
         private Boolean autoCreateTopicsEnable;
         private Boolean autoLeaderRebalanceEnable;
@@ -35,6 +35,7 @@ public class KafkaProperties {
         private Integer brokerId;
         private String compressionType;
         private Boolean deleteTopicEnable;
+        @Deprecated
         private String hostName;
         private Long leaderImbalanceCheckIntervalSeconds;
         private Integer leaderImbalancePerBrokerPercentage;
@@ -71,9 +72,12 @@ public class KafkaProperties {
         private Integer offsetsTopicNumPartitions;
         private Short offsetsTopicReplicationFactor;
         private Integer offsetsTopicSegmentBytes;
+        @Deprecated
         private Integer port;
         private Integer queuedMaxRequests;
+        @Deprecated
         private Long quotaConsumerDefault;
+        @Deprecated
         private Long quotaProducerDefault;
         private Integer replicaFetchMinBytes;
         private Integer replicaFetchWaitMaxMs;
@@ -311,7 +315,7 @@ public class KafkaProperties {
     public static class Local {
         private boolean enabled = false;
         private Integer zookeeperPort = 2181;
-        private Map<Integer, Integer> brokerIdAndPort;
+        private Map<Integer, String> brokerIdAndPort;
         private String kafkaHome;
         private String dataDir;
     }

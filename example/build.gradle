@@ -49,9 +49,5 @@ dependencies {
     compile project(':shared')
     compile(project(':service'))
 }
-task cleanKafkaLog(type: Delete) {
-    delete '../tmp'
-}
 
-//clean.dependsOn cleanKafkaLog
 test.enabled=false

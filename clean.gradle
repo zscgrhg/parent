@@ -1,0 +1,38 @@
+def killPidByPort(int port) {
+    "cmd /c netstat -aon|findstr 0.0.0.0:${port}".execute().inputStream.eachLine('GBK') {
+        println it
+        def pid = it.substring(it.lastIndexOf(' ')).trim()
+        if (pid) {
+            "cmd /c taskkill /T /F /PID  ${pid}".execute().inputStream.eachLine("GBK") {
+                println it
+            }
+        }
+    }
+}
+
+def killPidByMainClassName(String mainClassName) {
+    "cmd /c jps|findstr ${mainClassName}".execute().inputStream.eachLine('GBK') {
+        println it
+        def pid = it.substring(0, it.indexOf("${mainClassName}"))
+        if (pid) {
+            "cmd /c taskkill /T /F /PID  ${pid}".execute().inputStream.eachLine("GBK") {
+                println it
+            }
+        }
+    }
+}
+
+def stopZookeeper = "cmd /c bin\\windows\\zookeeper-server-stop.bat"
+        .execute(null, new File("E:\\kafka_2.11-0.10.1.0\\"))
+def stopKafka = "cmd /c bin\\windows\\kafka-server-stop.bat"
+        .execute(null, new File("E:\\kafka_2.11-0.10.1.0\\"))
+task killAndClean{
+    killPidByPort(9095)
+    stopKafka.inputStream.eachLine('GBK') {
+        println it
+    }
+    stopZookeeper.inputStream.eachLine('GBK') {
+        println it
+    }
+    delete '/tmp'
+}

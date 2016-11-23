@@ -85,18 +85,19 @@ public class ExecUtil {
     }
 
 
-    public static List<Thread> startKafka(File kafkaHome, File tempRoot, Map<String, Object> serverConfig, String zkPort, Map<Integer, Integer> brokerIdAndPorts) throws InterruptedException, IOException {
+    public static List<Thread> startKafka(File kafkaHome, File tempRoot, Map<String, Object> serverConfig, String zkPort, Map<Integer, String> brokerIdAndPorts) throws InterruptedException, IOException {
 
         File configDir = new File(tempRoot.getAbsolutePath() + File.separator + "config");
         configDir.mkdirs();
         List<Thread> threads = new ArrayList<>();
-        for (Map.Entry<Integer, Integer> brokerIdAndPort : brokerIdAndPorts.entrySet()) {
+        for (Map.Entry<Integer, String> brokerIdAndPort : brokerIdAndPorts.entrySet()) {
             final CountDownLatch kafkaLatch = new CountDownLatch(1);
+            String[] listeners=brokerIdAndPort.getValue().split(",");
             Properties serverProperties = ServerProperties.getKafkaProperties(
                     tempRoot.getAbsolutePath(),
                     "localhost:" + zkPort, serverConfig);
             serverProperties.put("broker.id", Integer.toString(brokerIdAndPort.getKey()));
-            serverProperties.put("listeners", "PLAINTEXT://0.0.0.0:" + brokerIdAndPort.getValue());
+            serverProperties.put("listeners", String.format(ServerProperties.BROKER_LISTENERS,listeners[0],listeners[1]));
             File serverCfgFile = createPropertiesFile(configDir.getAbsolutePath(), serverProperties, "server" + brokerIdAndPort.getKey() + ".properties");
             serverCfgFile.deleteOnExit();
             Thread startKafka = execNonBlock(kafkaHome,
@@ -162,14 +163,14 @@ public class ExecUtil {
         for (int i = 1; i < 3; i++) {
             brokerIdAndPort.put(i, 9202 + i);
         }
-        startServer(kafkaHome, tmpRoot, Collections.EMPTY_MAP, Collections.EMPTY_MAP, brokerIdAndPort);
+        //startServer(kafkaHome, tmpRoot, Collections.EMPTY_MAP, Collections.EMPTY_MAP, brokerIdAndPort);
     }
 
     public static KafkaConnection startServer(File kafkaHome,
                                               File tmpRoot,
                                               Map<String, Object> zookeeperProperties,
                                               Map<String, Object> kafkaProperties,
-                                              Map<Integer, Integer> brokerIdAndPort) throws IOException, InterruptedException {
+                                              Map<Integer, String> brokerIdAndPort) throws IOException, InterruptedException {
         stopKafkaIfExist(kafkaHome);
         //stopZookeeperIfExist(kafkaHome); // jvm exit silently
         Thread.sleep(1000L);
@@ -186,8 +187,9 @@ public class ExecUtil {
 
         String zkAddress = LOCAL_HOST + zkPort;
         StringBuilder sb = new StringBuilder();
-        for (Integer port : brokerIdAndPort.values()) {
-            sb.append(",").append(LOCAL_HOST).append(port);
+        for (String listeners : brokerIdAndPort.values()) {
+            String[] listener = listeners.split(",");
+            sb.append(",").append(listener[0]);
         }
         KafkaConnection kafkaConnection = KafkaConnection.builder().isEmbedded(false)
                 .zookeeperConnectionString(zkAddress)

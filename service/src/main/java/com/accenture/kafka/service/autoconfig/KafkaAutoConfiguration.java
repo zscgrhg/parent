@@ -127,7 +127,7 @@ public class KafkaAutoConfiguration {
                                                   KafkaProperties.Local local,
                                           KafkaProperties.Broker brokerProperties) throws Exception {
             int zookeeperPort = local.getZookeeperPort();
-            Map<Integer, Integer> brokerIdAndPort = local.getBrokerIdAndPort();
+            Map<Integer, String> brokerIdAndPort = local.getBrokerIdAndPort();
             File kafkaHome = new File(local.getKafkaHome());
             File dataDir = new File(local.getDataDir());
             KafkaConnection kafkaConnection =
