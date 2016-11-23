@@ -18,9 +18,10 @@ public class ZkStarter {
     private ZkThread zkThread;
 
 
-    public int getZkClientPort(){
+    public int getZkClientPort() {
         return Integer.parseInt(zkProperties.getProperty("clientPort"));
     }
+
     public ZkStarter(final String zkPropertiesPath) {
         InputStream resourceAsStream = getClass().getResourceAsStream(zkPropertiesPath);
         Properties p = new Properties();

@@ -38,8 +38,9 @@ public class Client<T extends KafkaMessage> {
 
 
     public final String clientId;
-    private final Producer<Integer, T> producer;
+    private volatile Producer<Integer, T> producer;
     private final Integer clientHash;
+    private final Map<String, Object> producerConfig;
 
 
     public Client(final String clientId, final ProductorConfig productorConfig, final String brokers) throws IOException {
@@ -47,16 +48,19 @@ public class Client<T extends KafkaMessage> {
         this.clientHash = clientId.hashCode();
         this.brokers = brokers;
         Properties props = new Properties();
-        Map<String, Object> producerConfig = productorConfig.getProducerConfig();
+        this.producerConfig = productorConfig.getProducerConfig();
         props.putAll(producerConfig);
         props.put("bootstrap.servers", this.brokers);
         producer = new KafkaProducer<>(props);
     }
 
 
-    public Future<RecordMetadata> send(T t) {
-        return producer.send(new ProducerRecord<Integer, T>(t.getTopic(), clientHash, t));
+    public  Future<RecordMetadata> send(T t) {
+        Future<RecordMetadata> send = producer.send(new ProducerRecord<Integer, T>(t.getTopic(), clientHash, t));
+        return send;
     }
+
+
 
     public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
         Pattern p;
