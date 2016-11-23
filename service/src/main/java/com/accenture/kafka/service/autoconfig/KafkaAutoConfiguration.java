@@ -1,18 +1,16 @@
 package com.accenture.kafka.service.autoconfig;
 
 
-import com.accenture.kafka.service.autoconfig.embedded.KafkaEmbedded;
-import com.accenture.kafka.service.autoconfig.local.ExecUtil;
+import com.accenture.kafka.service.server.KafkaStarter;
+import com.accenture.kafka.service.server.ZkStarter;
 import com.accenture.kafka.service.utils.KafkaUtil;
 import com.accenture.kafka.shared.Profiles;
 import kafka.server.KafkaServer;
-import kafka.utils.TestUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,21 +24,16 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by THINK on 2016/11/17.
  */
 
-@AutoConfigureAfter(PropertiesLoader.class)
+
 @ConditionalOnClass({ZkClient.class, KafkaServer.class})
 @EnableConfigurationProperties(
-        {KafkaProperties.External.class,
-                KafkaProperties.Broker.class,
-                KafkaProperties.Local.class,
+        {KafkaProperties.Production.class,
                 KafkaProperties.Embedded.class,
                 KafkaProperties.Consumer.class,
                 KafkaProperties.Producer.class})
@@ -97,74 +90,44 @@ public class KafkaAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnProperty(name = "kafka.external.enabled", havingValue = "true")
+    @ConditionalOnProperty(name = "kafka.production.enabled", havingValue = "true")
     @Profile(Profiles.PRODUCTION)
-    public static class ExternalAutoConfiguration {
+    public static class ProductionAutoConfiguration {
 
 
         @Bean
         @ConditionalOnProperty(name = {"kafka.zookeeperConnectionString", "kafka.brokersAddress"})
         @ConditionalOnMissingBean
-        public KafkaConnection kafkaExternal(@Autowired
-                                                     KafkaProperties.External external) throws Exception {
+        public KafkaConnection kafkaProduction(@Autowired
+                                                       KafkaProperties.Production production) throws Exception {
 
-            KafkaConnection kafkaConnection = KafkaConnection.builder().brokersAddress(external.getBrokersAddress())
+            KafkaConnection kafkaConnection = KafkaConnection.builder().brokersAddress(production.getBrokersAddress())
                     .isEmbedded(false)
-                    .zookeeperConnectionString(external.getZookeeperConnectionString()).build();
+                    .zookeeperConnectionString(production.getZookeeperConnectionString()).build();
             return kafkaConnection;
         }
 
     }
 
-    @Configuration
-    @ConditionalOnProperty(name = "kafka.local.enabled", havingValue = "true")
-    @Profile(Profiles.NON_PRODUCTION)
-    public static class LocalAutoConfiguration {
-
-        @Bean
-        @ConditionalOnMissingBean
-        public KafkaConnection kafkaLocal(@Autowired
-                                                  KafkaProperties.Local local,
-                                          KafkaProperties.Broker brokerProperties) throws Exception {
-            int zookeeperPort = local.getZookeeperPort();
-            Map<Integer, String> brokerIdAndPort = local.getBrokerIdAndPort();
-            File kafkaHome = new File(local.getKafkaHome());
-            File dataDir = new File(local.getDataDir());
-            KafkaConnection kafkaConnection =
-                    ExecUtil.startServer(kafkaHome,
-                            dataDir,
-                            Collections.<String,Object>singletonMap("clientPort", zookeeperPort),
-                            brokerProperties.getBrokerConfig(), brokerIdAndPort);
-
-
-            return kafkaConnection;
-        }
-    }
 
     @Configuration
     @ConditionalOnProperty(name = "kafka.embedded.enabled", havingValue = "true")
-    @ConditionalOnClass({TestUtils.class})
+    @ConditionalOnClass({KafkaStarter.class, ZkStarter.class})
     @Profile(Profiles.NON_PRODUCTION)
     public static class EmbeddedAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean
         public KafkaConnection kafkaEmbedded(@Autowired
-                                                     KafkaProperties.Embedded embedded,
-                                             KafkaProperties.Broker brokerProperties) throws Exception {
-            KafkaEmbedded kafka = new KafkaEmbedded(
-                    embedded.getPort(),
-                    embedded.getBrokerCount(),
-                    true,
-                    embedded.getPartitions(),
-                    embedded.getLogFilenamePattern(),
-                    embedded.getZookeeperDataDir(),
-                    brokerProperties.getBrokerConfig());
-            kafka.start();
-            String brokersAsString = kafka.getBrokersAsString();
-            String zookeeperConnectionString = kafka.getZookeeperConnectionString();
-            KafkaConnection kafkaConnection = KafkaConnection.builder().brokersAddress(brokersAsString)
+                                                     KafkaProperties.Embedded embedded) throws Exception {
+            Collection<String> kafkaConfigPath = embedded.getKafkaConfigPath().values();
+            Set<String> set=new HashSet<>();
+            set.addAll(kafkaConfigPath);
+            String zkConfigPath = embedded.getZkConfigPath();
+            KafkaStarter kafkaStarter = new KafkaStarter(zkConfigPath, set);
+            kafkaStarter.start();
+            KafkaConnection kafkaConnection = KafkaConnection.builder().brokersAddress(kafkaStarter.getBrokersAddress())
                     .isEmbedded(true)
-                    .zookeeperConnectionString(zookeeperConnectionString).build();
+                    .zookeeperConnectionString(kafkaStarter.getZkAddress()).build();
             return kafkaConnection;
         }
     }

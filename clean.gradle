@@ -34,5 +34,5 @@ task killAndClean{
     stopZookeeper.inputStream.eachLine('GBK') {
         println it
     }
-    delete '/tmp'
+    delete '/temp'
 }
